@@ -106,6 +106,13 @@ namespace CurrencyConverter
         private const int RATE_POSITION = 2;
         private const decimal PRECISION = 10000M;
  
+        // A bit of explanation on the convert method
+        // It is using a simple dijkstra algorithm to find the shortest path
+        // The set of conversion rates being represented as a graph
+        // It is using decimals for representing the numbers, which limits funny behaviors regarding float/double precision
+        // Finally, it's converting the rates into integer so that it makes it much easier to round to the 4th decimal
+        // You just need to always keep in mind to divide by 10 000 when necessary
+        // But rounding to the nearest integer gives you automatically the proper adjustment (in particular for the inverse of rates)
         private static string convert(string toConvert, List<string> rates)
         {
             string[] splitConvertTo = toConvert.Split(SEPARATOR);
@@ -127,8 +134,11 @@ namespace CurrencyConverter
                 string toRateCurrency = splitRateDescription[RATE_TO_CURRENCY_POSITION];
                 string rateAsString = splitRateDescription[RATE_POSITION];
                 decimal rateAsDouble = decimal.Parse(rateAsString);
+                
                 decimal rate = decimal.Round(rateAsDouble * PRECISION);
+                //We make sure our inverse rate is rounded to the 4th decimal
                 decimal inverseRate = decimal.Round((PRECISION / rateAsDouble));
+
                 helper.addEdge(fromRateCurrency, toRateCurrency, rate);
                 helper.addEdge(toRateCurrency, fromRateCurrency, inverseRate);
             }
@@ -139,11 +149,6 @@ namespace CurrencyConverter
                 convertedValue = convertedValue * (rate / PRECISION);
             }
             convertedValue = decimal.Round(convertedValue);
-        //System.Diagnostics.Debug.WriteLine("CHF;JPY : " + helper.getShortestPath("CHF", "JPY"));
-        //    System.Diagnostics.Debug.WriteLine("JPY;CHF : " + helper.getShortestPath("JPY", "CHF"));
-        //    System.Diagnostics.Debug.WriteLine("USD;INR : " + helper.getShortestPath("USD", "INR"));
-        //    System.Diagnostics.Debug.WriteLine("INR;USD : " + helper.getShortestPath("INR", "USD"));
-        //    System.Diagnostics.Debug.WriteLine("EUR;JPY : " + helper.getShortestPath("EUR", "JPY"));
             return string.Format("{0:0}",convertedValue);
         }
 
@@ -173,11 +178,12 @@ namespace CurrencyConverter
                 _EdgeValues[String.Format(EDGE_FORMAT, startNode, endNode)] = value;
             }
             //This is using a simple Dijkstra algorithm
-            //There might be some other better choices, but this will do
+            //There could be some other better choices, but this will do
             public List<decimal> getShortestPath(string sourceNode, string destinatioNode)
             {
                 Dictionary<string, string> previous = new Dictionary<string, string>();
                 Dictionary<string, int> distances = new Dictionary<string, int>();
+                // initialization
                 foreach (string node in _Nodes) {
                     distances[node] = int.MaxValue;
                 }
@@ -186,6 +192,7 @@ namespace CurrencyConverter
                 while(queue.Count > 0) {
                     int smallestDistance = int.MaxValue;
                     string selectedNode = "";
+                    // Find the node with the smallest distance to the source
                     foreach (string node in queue)
                     {
                         int nodeDistance = distances[node];
@@ -195,12 +202,13 @@ namespace CurrencyConverter
                             selectedNode = node;
                         }
                     }
-                    //We have found our path so we can exit OR there is a maxvalue, which means no path exists between the 2 nodes
+                    //We have found our full path so we can exit OR there is a maxvalue, which means no path exists between the 2 nodes
                     if (selectedNode == destinatioNode || smallestDistance == int.MaxValue)
                     {
                         break;
                     }
                     queue.Remove(selectedNode);
+                    // We look at the neighbor of the selected node, and see if we need to update distances to a shorter value
                     foreach (string neighbour in _Edges[selectedNode])
                     {
                         int distance = smallestDistance + 1;
@@ -213,12 +221,14 @@ namespace CurrencyConverter
                 List<decimal> result = new List<decimal>();
                 if (previous.ContainsKey(destinatioNode))
                 {
+                    // Walk back to get all the rates
+                    // We do an insertion to have them in proper order, even though it should not matter
                     string current = destinatioNode;
                     while (previous.ContainsKey(current))
                     {
                         string previousNode = previous[current];
                         decimal rate = _EdgeValues[string.Format(EDGE_FORMAT, previousNode, current)];
-                        result.Add(rate);
+                        result.Insert(0, rate);
                         current = previousNode;
                     }
                 }
