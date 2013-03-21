@@ -32,7 +32,9 @@ namespace CurrencyConverter
             rates.Add("AUD;JPY;86.0305");
             rates.Add("EUR;USD;1.2989");
             rates.Add("JPY;INR;0.6571");
-            Console.WriteLine(convert(toConvert, rates));
+            string v = convert(toConvert, rates);
+            System.Diagnostics.Debug.WriteLine(v);
+            Console.WriteLine(v);
 
         }
         private const char SEPARATOR = ';';
@@ -42,7 +44,8 @@ namespace CurrencyConverter
         private const int RATE_FROM_CURRENCY_POSITION = 0;
         private const int RATE_TO_CURRENCY_POSITION = 1;
         private const int RATE_POSITION = 2;
-
+        private const decimal PRECISION = 10000M;
+ 
         private static string convert(string toConvert, List<string> rates)
         {
             string[] splitConvertTo = toConvert.Split(SEPARATOR);
@@ -50,8 +53,8 @@ namespace CurrencyConverter
                 return "Invalid line describing the conversion to be done";
             }
             string fromCurrency = splitConvertTo[FROM_CURRENCY_POSITION];
-            double originalAmount = double.NaN;
-            if (!double.TryParse(splitConvertTo[ORIGINAL_AMOUNT_POSITION], out originalAmount))
+            decimal originalAmount = 0;
+            if (!decimal.TryParse(splitConvertTo[ORIGINAL_AMOUNT_POSITION], out originalAmount))
             {
                 return "Invalid line describing the conversion to be done";
             }
@@ -62,28 +65,38 @@ namespace CurrencyConverter
                 string[] splitRateDescription = rateDescription.Split(SEPARATOR);
                 string fromRateCurrency = splitRateDescription[RATE_FROM_CURRENCY_POSITION];
                 string toRateCurrency = splitRateDescription[RATE_TO_CURRENCY_POSITION];
-                string rate = splitRateDescription[RATE_POSITION];
-
+                string rateAsString = splitRateDescription[RATE_POSITION];
+                decimal rateAsDouble = decimal.Parse(rateAsString);
+                decimal rate = decimal.Round(rateAsDouble * PRECISION);
+                decimal inverseRate = decimal.Round((PRECISION / rateAsDouble));
                 helper.addEdge(fromRateCurrency, toRateCurrency, rate);
-                helper.addEdge(toRateCurrency,fromRateCurrency, "1/"+rate);
+                helper.addEdge(toRateCurrency, fromRateCurrency, inverseRate);
             }
-            System.Diagnostics.Debug.WriteLine("CHF;JPY : " + helper.getShortestPath("CHF", "JPY"));
-            System.Diagnostics.Debug.WriteLine("JPY;CHF : " + helper.getShortestPath("JPY", "CHF"));
-            System.Diagnostics.Debug.WriteLine("USD;INR : " + helper.getShortestPath("USD", "INR"));
-            System.Diagnostics.Debug.WriteLine("INR;USD : " + helper.getShortestPath("INR", "USD"));
-            return "";
+
+            decimal convertedValue = originalAmount;
+            foreach (decimal rate in helper.getShortestPath(fromCurrency, toCurrency))
+            {
+                convertedValue = convertedValue * (rate / PRECISION);
+            }
+            convertedValue = decimal.Round(convertedValue);
+        //System.Diagnostics.Debug.WriteLine("CHF;JPY : " + helper.getShortestPath("CHF", "JPY"));
+        //    System.Diagnostics.Debug.WriteLine("JPY;CHF : " + helper.getShortestPath("JPY", "CHF"));
+        //    System.Diagnostics.Debug.WriteLine("USD;INR : " + helper.getShortestPath("USD", "INR"));
+        //    System.Diagnostics.Debug.WriteLine("INR;USD : " + helper.getShortestPath("INR", "USD"));
+        //    System.Diagnostics.Debug.WriteLine("EUR;JPY : " + helper.getShortestPath("EUR", "JPY"));
+            return string.Format("{0:0}",convertedValue);
         }
 
         private class GraphSearcher
         {
             private HashSet<string> _Nodes = new HashSet<string>();
             private Dictionary<string, HashSet<string>> _Edges = new Dictionary<string, HashSet<string>>();
-            private Dictionary<string, string> _EdgeValues = new Dictionary<string, string>();
+            private Dictionary<string, decimal> _EdgeValues = new Dictionary<string, decimal>();
             private const string EDGE_FORMAT = "{0};{1}";
 
             public GraphSearcher() { }
 
-            public void addEdge(string startNode, string endNode, string value)
+            public void addEdge(string startNode, string endNode, decimal value)
             {
                 _Nodes.Add(startNode);
                 _Nodes.Add(endNode);
@@ -101,7 +114,7 @@ namespace CurrencyConverter
             }
             //This is using a simple Dijkstra algorithm
             //There might be some other better choices, but this will do
-            public string getShortestPath(string sourceNode, string destinatioNode)
+            public List<decimal> getShortestPath(string sourceNode, string destinatioNode)
             {
                 Dictionary<string, string> previous = new Dictionary<string, string>();
                 Dictionary<string, int> distances = new Dictionary<string, int>();
@@ -137,16 +150,15 @@ namespace CurrencyConverter
                         }
                     }
                 }
-                string result = "";
+                List<decimal> result = new List<decimal>();
                 if (previous.ContainsKey(destinatioNode))
                 {
                     string current = destinatioNode;
-                    result += destinatioNode;
                     while (previous.ContainsKey(current))
                     {
                         string previousNode = previous[current];
-                        string rate = _EdgeValues[string.Format(EDGE_FORMAT,previousNode,current)];
-                        result += "<-" + rate + "<-" + previousNode;
+                        decimal rate = _EdgeValues[string.Format(EDGE_FORMAT, previousNode, current)];
+                        result.Add(rate);
                         current = previousNode;
                     }
                 }
