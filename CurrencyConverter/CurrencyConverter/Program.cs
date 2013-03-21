@@ -121,6 +121,7 @@ namespace CurrencyConverter
             }
             string fromCurrency = splitConvertTo[FROM_CURRENCY_POSITION];
             decimal originalAmount = 0;
+            // Code is running on a French server, so numbers with . were probably creating a problem since, my guess is that it was using a French CultureInfo
             if (!decimal.TryParse(splitConvertTo[ORIGINAL_AMOUNT_POSITION], System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture.NumberFormat, out originalAmount))
             {
                 return "Invalid line describing the conversion to be done";
@@ -133,6 +134,7 @@ namespace CurrencyConverter
                 string fromRateCurrency = splitRateDescription[RATE_FROM_CURRENCY_POSITION];
                 string toRateCurrency = splitRateDescription[RATE_TO_CURRENCY_POSITION];
                 string rateAsString = splitRateDescription[RATE_POSITION];
+                // Code is running on a French server, so numbers with . were probably creating a problem since, my guess is that it was using a French CultureInfo
                 decimal rateAsDouble = decimal.Parse(rateAsString, System.Globalization.CultureInfo.InvariantCulture.NumberFormat);
                 
                 decimal rate = decimal.Round(rateAsDouble * PRECISION);
