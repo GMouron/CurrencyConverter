@@ -9,21 +9,33 @@ namespace CurrencyConverter
     {
         static void Main(string[] args)
         {
-            //string toConvert = Console.ReadLine();
-            //int numberOfRates = -1;
-            //if (int.TryParse(Console.ReadLine(), out numberOfRates) && numberOfRates > 0)
-            //{
-            //    List<string> rates = new List<string>();
-            //    for (int i = 0; i < numberOfRates; i++)
-            //    {
-            //        rates.Add(Console.ReadLine());
-            //    }
-            //    Console.WriteLine(convert(toConvert, rates));
-            //}
-            //else
-            //{
-            //    Console.WriteLine("Was expecting (positive) number of rates");
-            //}
+            string toConvert = Console.ReadLine();
+            int numberOfRates = -1;
+            if (int.TryParse(Console.ReadLine(), out numberOfRates) && numberOfRates > 0)
+            {
+                List<string> rates = new List<string>();
+                for (int i = 0; i < numberOfRates; i++)
+                {
+                    rates.Add(Console.ReadLine());
+                }
+                Console.WriteLine(convert(toConvert, rates));
+            }
+            else
+            {
+                Console.WriteLine("Was expecting (positive) number of rates");
+            }
+
+
+            //test1();
+            //test2();
+            //test3();
+            //test4();
+        }
+        // TODO Make those into proper unit tests
+        // This is testing the exemple given on the page
+        // Expected result : 59033
+        private static void test1()
+        {
             string toConvert = "EUR;550;JPY";
             List<string> rates = new List<string>();
             rates.Add("AUD;CHF;0.9661");
@@ -35,8 +47,56 @@ namespace CurrencyConverter
             string v = convert(toConvert, rates);
             System.Diagnostics.Debug.WriteLine(v);
             Console.WriteLine(v);
-
         }
+        // This is testing the second test case announced ("direct conversion")
+        // Expected result : 714
+        private static void test2()
+        {
+            string toConvert = "EUR;550;USD";
+            List<string> rates = new List<string>();
+            rates.Add("AUD;CHF;0.9661");
+            rates.Add("JPY;KRW;13.1151");
+            rates.Add("EUR;CHF;1.2053");
+            rates.Add("AUD;JPY;86.0305");
+            rates.Add("EUR;USD;1.2989");
+            rates.Add("JPY;INR;0.6571");
+            string v = convert(toConvert, rates);
+            System.Diagnostics.Debug.WriteLine(v);
+            Console.WriteLine(v);
+        }
+        // This is testing the third test case announced ("multiple paths, needs to take the shortest")
+        // Expected result : 250
+        private static void test3()
+        {
+            string toConvert = "AAA;10;CCC";
+            List<string> rates = new List<string>();
+            rates.Add("AAA;BBB;5");
+            rates.Add("BBB;CCC;5");
+            rates.Add("AAA;DDD;5");
+            rates.Add("DDD;EEE;5");
+            rates.Add("EEE;FFF;5");
+            rates.Add("FFF;CCC;5");
+            string v = convert(toConvert, rates);
+            System.Diagnostics.Debug.WriteLine(v);
+            Console.WriteLine(v);
+        }
+        // This is testing the fourth test case announced ("inverted direct conversion")
+        //Expected result : 423
+        private static void test4()
+        {
+            string toConvert = "USD;550;EUR";
+            List<string> rates = new List<string>();
+            rates.Add("AUD;CHF;0.9661");
+            rates.Add("JPY;KRW;13.1151");
+            rates.Add("EUR;CHF;1.2053");
+            rates.Add("AUD;JPY;86.0305");
+            rates.Add("EUR;USD;1.2989");
+            rates.Add("JPY;INR;0.6571");
+            string v = convert(toConvert, rates);
+            System.Diagnostics.Debug.WriteLine(v);
+            Console.WriteLine(v);
+        }
+
         private const char SEPARATOR = ';';
         private const int FROM_CURRENCY_POSITION = 0;
         private const int ORIGINAL_AMOUNT_POSITION = 1;
